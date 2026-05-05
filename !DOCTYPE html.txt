@@ -136,7 +136,7 @@
             </div>
 
             <button onclick="checkSetup()" class="btn-sindical text-3xl px-20 py-6 mb-10">
-                COMENÇAR LLUITA
+                COMENÇAR LA LLUITA
             </button>
         </div>
     </div>
@@ -191,7 +191,7 @@
                 <h2 class="titular text-4xl mb-6">Accions a realitzar:</h2>
                 <div id="actions-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                 <button onclick="nextTurn()" class="btn-sindical w-full mt-8 py-8 text-3xl bg-zinc-900 shadow-[10px_10px_0px_#EA5749]">
-                    SEGUENT SETMANA >>
+                    SETMANA SEGÜENT >>
                 </button>
             </div>
         </main>
@@ -216,22 +216,30 @@
         const apiKey = ""; 
 
         const companies = [
-            { id: 1, name: "Amazonas Logística", icon: "📦", desc: "Salaris precaris i ritmes de bogeria al magatzem." },
+            { id: 1, name: "Amazonas Logística", icon: "📦", desc: "Salaris precaris i ritmes frenètics al magatzem." },
             { id: 2, name: "Hotel Paradís", icon: "🏨", desc: "Kellys explotades i molta temporalitat estacional." },
-            { id: 3, name: "Metal-Tech Fab", icon: "🏭", desc: "Manca d'EPIS i seguretat deficient en la línia." },
+            { id: 3, name: "Metal-Tech Fab", icon: "🏭", desc: "Manca d'EPI i seguretat deficient en la línia." },
             { id: 4, name: "TIC Global Services", icon: "💻", desc: "Falsos autònoms i nul·la conciliació familiar." },
             { id: 5, name: "Supermercats PreuAlt", icon: "🛒", desc: "Cues infinites i manca de personal a caixes." },
-            { id: 6, name: "Neteja Brillant", icon: "🧹", desc: "Contractes a temps parcial forçats i ràtios altes." },
-            { id: 7, name: "TeleMark Respostes", icon: "🎧", desc: "Pressió per vendes i control de pauses de bany." },
+            { id: 6, name: "Neteja Brillant", icon: "🧹", desc: "Contractes a temps parcial forçats i ràtios massa altes." },
+            { id: 7, name: "TeleMark Respostes", icon: "🎧", desc: "Pressió per vendes i control de les pauses de bany." },
             { id: 8, name: "Transports Ràpids", icon: "🚚", desc: "Hores extres no pagades i vehicles sense manteniment." },
-            { id: 9, name: "Menjadors Escolars SA", icon: "🍎", desc: "Pocs minuts per menjar i càrrega física extrema." }
+            { id: 9, name: "Menjadors Escolars SA", icon: "🍎", desc: "Pocs minuts per dinar i càrrega física extrema." }
         ];
 
         const actions = [
-            { id: 'f', name: "Full Informatiu", cost: 4, val: 5, icon: "📄", desc: "Piquet a l'entrada explicant drets." },
-            { id: 'c', name: "Cafè clandestí", cost: 6, val: 8, icon: "☕", desc: "Reunió discreta amb els indecisos." },
-            { id: 'i', name: "Denúncia Inspecció", cost: 12, val: 15, icon: "⚖️", desc: "Cop legal per irregularitats greus." },
-            { id: 'v', name: "Vaga Parcial", cost: 22, val: 25, icon: "📢", desc: "Aturada d'una hora per collar RRHH." }
+            { id: 'f', name: "Full Informatiu", cost: 4, val: 4, icon: "📄", desc: "Piquet a l'entrada per explicar els drets." },
+            { id: 'c', name: "Cafè clandestí", cost: 6, val: 7, icon: "☕", desc: "Reunió discreta amb els treballadors indecisos." },
+            { id: 'i', name: "Denúncia Inspecció", cost: 12, val: 12, icon: "⚖️", desc: "Cop legal per irregularitats greus." },
+            { id: 'v', name: "Vaga Parcial", cost: 22, val: 20, icon: "📢", desc: "Aturada d'una hora per pressionar RRHH." }
+        ];
+
+        const obstacles = [
+            { name: "Campanya de por", impact: 6, msg: "L'empresa amenaça amb acomiadaments si hi ha massa mobilització." },
+            { name: "Pizzes de 'bon rotllo'", impact: 4, msg: "RRHH regala pizzes per apaivagar els ànims de la plantilla." },
+            { name: "El Sindicat Groc", impact: 8, msg: "Un sindicat afavorit per la direcció intoxica amb notícies falses." },
+            { name: "Promeses buides", impact: 5, msg: "La gerència promet una pujada salarial que mai arriba al paper." },
+            { name: "Fatiga laboral", impact: 3, msg: "L'excés d'hores extres fa que la gent passi de sindicats." }
         ];
 
         let state = {
@@ -288,9 +296,10 @@
 
         function doAction(id) {
             const a = actions.find(x => x.id === id);
+            if (state.credit < a.cost) return;
             state.credit -= a.cost;
             state.support += a.val;
-            addLog(`✅ Executat: ${a.name} (+${a.val}% vots)`);
+            addLog(`✅ S'ha executat: ${a.name} (+${a.val}% de vots)`);
             updateUI();
         }
 
@@ -309,13 +318,18 @@
             state.credit = state.maxCredit;
             state.iaUsed = false;
             
-            // Event aleatori d'oposició
-            if (Math.random() > 0.65) {
-                const mal = Math.floor(Math.random() * 6) + 3;
-                state.support = Math.max(0, state.support - mal);
-                addLog(`⚠️ RRHH ataca: Han comprat pizzes per a la plantilla. -${mal}% vots.`);
+            // Increment de la dificultat: desgast natural
+            state.support = Math.max(0, state.support - 2);
+            addLog(`📉 Desgast: Els vots baixen un 2% per la inacció setmanal.`);
+
+            // Traves de l'empresa (Event aleatori d'oposició)
+            if (Math.random() > 0.5) {
+                const obs = obstacles[Math.floor(Math.random() * obstacles.length)];
+                state.support = Math.max(0, state.support - obs.impact);
+                addLog(`⚠️ ${obs.name.toUpperCase()}: ${obs.msg} (-${obs.impact}% vots)`);
             }
-            addLog(`Setmana ${state.week} iniciada.`);
+            
+            addLog(`La setmana ${state.week} ha començat.`);
             updateUI();
         }
 
@@ -350,7 +364,7 @@
                     await new Promise(resolve => setTimeout(resolve, Math.pow(2, retries) * 1000));
                 }
             }
-            return "Error de connexió sindical. L'empresa ha tallat el Wi-Fi?";
+            return "S'ha produït un error de connexió sindical. L'empresa ha tallat el Wi-Fi?";
         }
 
         async function openIA(type) {
@@ -369,28 +383,28 @@
             loader.classList.remove('hidden');
 
             let prompt, system, title;
-            const commonContext = `Empresa: ${state.company.name}. Sector: ${state.company.desc}. Setmana: ${state.week}/12. Suport: ${state.support}%.`;
+            const commonContext = `Empresa: ${state.company.name}. Sector: ${state.company.desc}. Setmana: ${state.week}/12. Suport actual: ${state.support}%.`;
 
             switch(type) {
                 case 'discurs':
                     title = "📢 DISCURS ÈPIC";
-                    system = "Ets un líder sindical carismàtic. Fes discursos breus, motivadors i un punt agressius contra RRHH. En català.";
-                    prompt = `${commonContext}\nRedacta un discurs de 45 paraules per convèncer als treballadors de votar-nos.`;
+                    system = "Ets un líder sindical carismàtic. Fes discursos breus, motivadors i un punt agressius contra RRHH. Utilitza un català correcte però popular. Evita paraules en castellà.";
+                    prompt = `${commonContext}\nRedacta un discurs de 45 paraules per convèncer els treballadors que ens votin.`;
                     break;
                 case 'proposta':
                     title = "📜 PROGRAMA ELECTORAL";
-                    system = "Ets un expert en negociació de convenis. Les teves propostes són realistes però ambicioses. En català.";
-                    prompt = `${commonContext}\nCrea 3 punts de programa electoral realistes per a aquesta empresa.`;
+                    system = "Ets un expert en negociació de convenis. Les teves propostes són realistes però ambicioses per a la classe treballadora. En català.";
+                    prompt = `${commonContext}\nCrea 3 punts de programa electoral realistes per a aquesta empresa específica.`;
                     break;
                 case 'negociacio':
                     title = "📩 RECLAMACIÓ RRHH";
-                    system = "Ets un advocat laboralista. El teu to és formal, seriós i amenaçador legalment. En català.";
-                    prompt = `${commonContext}\nEscriu una reclamació de 40 paraules per incompliment de normativa laboral.`;
+                    system = "Ets un advocat laboralista del sindicat. El teu to és formal, seriós i amenaçador legalment. En català.";
+                    prompt = `${commonContext}\nEscriu una reclamació de 40 paraules per un incompliment flagrant de la normativa laboral.`;
                     break;
                 case 'consell':
                     title = "🧠 ESTRATÈGIA IA";
-                    system = "Ets un estratega d'eleccions sindicals. Analitza la situació i dóna un consell clau. En català.";
-                    prompt = `${commonContext}\nDóna'm un consell ràpid per guanyar vots aquesta setmana.`;
+                    system = "Ets un estratega d'eleccions sindicals amb molta experiència. Analitza la situació i dóna un consell clau en català.";
+                    prompt = `${commonContext}\nDóna'm un consell ràpid i mordaç per guanyar vots aquesta setmana.`;
                     break;
             }
 
@@ -401,11 +415,11 @@
             body.innerText = res;
 
             if (type === 'discurs') {
-                footer.innerHTML = `<button onclick="applyIAEffect('boost', 9)" class="btn-sindical">PUBLICAR (+9% VOTS)</button>`;
+                footer.innerHTML = `<button onclick="applyIAEffect('boost', 8)" class="btn-sindical">PUBLICAR (+8% VOTS)</button>`;
             } else if (type === 'proposta') {
-                footer.innerHTML = `<button onclick="applyIAEffect('boost', 6)" class="btn-sindical">DIFONDRE (+6% VOTS)</button>`;
+                footer.innerHTML = `<button onclick="applyIAEffect('boost', 5)" class="btn-sindical">DIFONDRE (+5% VOTS)</button>`;
             } else if (type === 'negociacio') {
-                footer.innerHTML = `<button onclick="applyIAEffect('credit', 12)" class="btn-sindical">PRESENTAR (+12H CRÈDIT)</button>`;
+                footer.innerHTML = `<button onclick="applyIAEffect('credit', 10)" class="btn-sindical">PRESENTAR (+10H CRÈDIT)</button>`;
             } else {
                 footer.innerHTML = `<button onclick="closeIA()" class="btn-sindical">ENTÈS</button>`;
             }
@@ -414,11 +428,11 @@
         function applyIAEffect(type, val) {
             if (type === 'boost') {
                 state.support += val;
-                addLog(`✨ IA: Discurs/Proposta llançada! +${val}% vots.`);
+                addLog(`✨ IA: Discurs/Proposta llançada amb èxit! +${val}% vots.`);
                 state.iaUsed = true;
             } else if (type === 'credit') {
                 state.credit = Math.min(state.maxCredit, state.credit + val);
-                addLog(`✨ IA: Guanyat crèdit extra per via legal! +${val}H.`);
+                addLog(`✨ IA: S'ha guanyat crèdit extra per via legal! +${val}H.`);
             }
             updateUI();
             closeIA();
@@ -432,9 +446,9 @@
             <div class="min-h-screen bg-zinc-900 flex items-center justify-center p-6 text-white text-center">
                 <div class="card-collage p-10 text-black bg-white max-w-lg">
                     <h1 class="titular text-7xl mb-6 ${win ? 'text-green-600' : 'text-red-600'}">${win ? 'VICTÒRIA' : 'DERROTA'}</h1>
-                    <p class="text-3xl mb-4 font-black">${state.support}% DE VOTS</p>
+                    <p class="text-3xl mb-4 font-black">${state.support}% DELS VOTS</p>
                     <p class="mb-10 italic">A l'empresa ${state.company.name.toUpperCase()}</p>
-                    <p class="mb-10">${win ? 'Has aconseguit la majoria absoluta al comitè! Els drets dels treballadors estan fora de perill.' : 'La direcció i el sindicat groc han guanyat. Haurem d\'esperar 4 anys més.'}</p>
+                    <p class="mb-10">${win ? 'Has aconseguit la majoria absoluta al comitè d\'empresa! Els drets dels treballadors estan fora de perill gràcies a la teva lluita.' : 'La direcció i el sindicat groc han guanyat aquesta vegada. La plantilla continuarà desprotegida, però la lluita segueix.'}</p>
                     <button onclick="location.reload()" class="btn-sindical px-10">REINTENTAR LA LLUITA</button>
                 </div>
             </div>`;
